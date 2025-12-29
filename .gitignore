@@ -19,7 +19,6 @@ Login Data For Account-journal
 Local Storage/
 Session Storage/
 IndexedDB/
-data/
 
 # 进程 PID 文件
 .dev-server.pid
