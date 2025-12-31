@@ -29,3 +29,5 @@ IndexedDB/
 
 # 进程 PID 文件
 .dev-server.pid
+
+docs/

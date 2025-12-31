@@ -308,6 +308,35 @@ function mountPlatformRoutes(prefix, apis) {
   });
 
   // 可选：获取页面 HTML（仅部分平台实现）
+
+  // 远程注销 (清除所有缓存和Cookie)
+  app.post(`${base}/remote-logout`, async (req, res) => {
+    try {
+      const page = apis.getPage ? apis.getPage() : null;
+      if (!page) throw new Error('当前没有活动的浏览器页面');
+
+      console.log('[Remote] 执行远程注销...');
+      const client = await page.context().newCDPSession(page);
+      await client.send('Network.clearBrowserCookies');
+      await client.send('Network.clearBrowserCache');
+      await page.evaluate(() => localStorage.clear());
+      await page.evaluate(() => sessionStorage.clear());
+
+      // 刷新页面以生效
+      await page.reload();
+
+      // 截图反馈
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const screenshotName = `logout-${Date.now()}.png`;
+      const screenshotPath = path.join(DEBUG_SCREENSHOT_DIR, screenshotName);
+      await page.screenshot({ path: screenshotPath });
+
+      res.json({ success: true, message: '已清除所有登录状态', screenshot: screenshotName, url: `/debug-screenshots/${screenshotName}` });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   if (typeof apis.fetchProfileHtml === 'function') {
     app.get(`${base}/fetch-profile-html`, async (req, res) => {
       try {
@@ -382,33 +411,7 @@ function isPortAvailable(port) {
   });
 }
 
-// 远程注销 (清除所有缓存和Cookie)
-app.post(`${base}/remote-logout`, async (req, res) => {
-  try {
-    const page = apis.getPage ? apis.getPage() : null;
-    if (!page) throw new Error('当前没有活动的浏览器页面');
-    
-    console.log('[Remote] 执行远程注销...');
-    const client = await page.context().newCDPSession(page);
-    await client.send('Network.clearBrowserCookies');
-    await client.send('Network.clearBrowserCache');
-    await page.evaluate(() => localStorage.clear());
-    await page.evaluate(() => sessionStorage.clear());
-    
-    // 刷新页面以生效
-    await page.reload();
-    
-    // 截图反馈
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const screenshotName = `logout-${Date.now()}.png`;
-    const screenshotPath = path.join(DEBUG_SCREENSHOT_DIR, screenshotName);
-    await page.screenshot({ path: screenshotPath });
 
-    res.json({ success: true, message: '已清除所有登录状态', screenshot: screenshotName, url: `/debug-screenshots/${screenshotName}` });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 // 启动服务
 async function startServer() {
