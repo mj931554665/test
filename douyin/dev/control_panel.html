@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>远程浏览器控制面板 - Douyin Publisher</title>
+    <style>
+        :root {
+            --primary: #fe2c55;
+            --bg: #161722;
+            --panel: #252632;
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px 20px;
+            background-color: var(--panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        button.secondary {
+            background-color: #3a3b45;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: auto;
+            position: relative;
+        }
+
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            background-color: #000;
+        }
+
+        #browser-img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            cursor: crosshair;
+        }
+
+        .status-bar {
+            padding: 10px 20px;
+            background-color: var(--panel);
+            font-size: 13px;
+            color: #aaa;
+            display: flex;
+            gap: 20px;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="font-size: 1.2em; font-weight: bold;">远程可视化控制台</div>
+        <div class="controls">
+            <select id="platform-select"
+                style="background:#3a3b45; color:white; border:none; padding:8px; border-radius:4px;">
+                <option value="douyin">抖音 (Douyin)</option>
+                <option value="xhs" selected>小红书 (XHS)</option>
+            </select>
+            <input type="text" id="url-input" placeholder="输入 URL (如: https://www.xiaohongshu.com/...)"
+                style="background:#161722; color:white; border:1px solid #3a3b45; padding:8px; border-radius:4px; width: 250px;">
+            <button onclick="remoteGoTo()">跳转</button>
+            <div style="border-left: 1px solid #3a3b45; margin: 0 5px;"></div>
+            <input type="text" id="type-input" placeholder="输入文字 (如验证码)"
+                style="background:#161722; color:white; border:1px solid #3a3b45; padding:8px; border-radius:4px; width: 120px;">
+            <button onclick="remoteType()">输入</button>
+            <button onclick="refreshScreenshot()">刷新画面</button>
+            <button class="secondary" onclick="checkStatus()">检查登录状态</button>
+            <button onclick="remoteLogout()" style="background-color: #ff4d4f;">注销账号</button>
+        </div>
+    </header>
+
+    <main id="main">
+        <div class="canvas-container">
+            <img id="browser-img" src="" alt="浏览器画面加载中..." onclick="handleClick(event)">
+        </div>
+    </main>
+
+    <div class="status-bar">
+        <span id="coord-info">坐标: (0, 0)</span>
+        <span id="last-update">最后更新: -</span>
+    </div>
+
+    <div id="loading">正在处理请求...</div>
+
+    <script>
+        const img = document.getElementById('browser-img');
+        const platformSelect = document.getElementById('platform-select');
+        const loading = document.getElementById('loading');
+
+        async function refreshScreenshot() {
+            loading.style.display = 'block';
+            try {
+                const platform = platformSelect.value;
+                const res = await fetch(`/${platform}/remote-screenshot`);
+                const data = await res.json();
+                if (data.success) {
+                    img.src = data.url + '?t=' + Date.now();
+                    document.getElementById('last-update').innerText = '最后更新: ' + new Date().toLocaleTimeString();
+                } else {
+                    alert('刷新失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('网络错误');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function handleClick(e) {
+            const rect = img.getBoundingClientRect();
+            // 计算图片实际像素坐标 (针对 Playwright 默认的 1470x756)
+            // 注意：我们 initBrowser 使用的是 1470x756
+            const scaleX = 1470 / rect.width;
+            const scaleY = 756 / rect.height;
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            document.getElementById('coord-info').innerText = `点击坐标: (${x}, ${y})`;
+
+            loading.style.display = 'block';
+            try {
+                const platform = platformSelect.value;
+                const res = await fetch(`/${platform}/remote-click`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x, y, type: 'click' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // 点击后延迟 1s 自动刷新画面看结果
+                    setTimeout(refreshScreenshot, 1000);
+                }
+            } catch (e) {
+                alert('点击执行失败');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function checkStatus() {
+            const platform = platformSelect.value;
+            const res = await fetch(`/${platform}/check-status`);
+            const data = await res.json();
+            alert(data.message);
+        }
+
+        async function remoteGoTo() {
+            const urlInput = document.getElementById('url-input');
+            const url = urlInput.value.trim();
+            if (!url) return alert('请输入 URL');
+
+            loading.style.display = 'block';
+            try {
+                const platform = platformSelect.value;
+                const res = await fetch(`/${platform}/remote-goto`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // 跳转后自动刷新画面
+                    setTimeout(refreshScreenshot, 1500);
+                } else {
+                    alert('跳转失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('网络错误');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function remoteType() {
+            const typeInput = document.getElementById('type-input');
+            const text = typeInput.value.trim();
+            if (!text) return alert('请输入文字');
+
+            loading.style.display = 'block';
+            try {
+                const platform = platformSelect.value;
+                const res = await fetch(`/${platform}/remote-type`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    typeInput.value = ''; // 清空输入
+                    setTimeout(refreshScreenshot, 500);
+                } else {
+                    alert('输入失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('网络错误');
+            } finally {
+                loading.style.display = 'none';
+            }
+            async function remoteLogout() {
+                if (!confirm('确定要强制退出当前登录的账号吗？\n这会清除浏览器所有的 Cookie 和缓存。')) return;
+
+                loading.style.display = 'block';
+                try {
+                    const platform = platformSelect.value;
+                    const res = await fetch(`/${platform}/remote-logout`, {
+                        method: 'POST'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(data.message);
+                        setTimeout(refreshScreenshot, 1000);
+                    } else {
+                        alert('注销失败: ' + data.error);
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }
+
+            // 支持回车键跳转
+            document.getElementById('url-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    remoteGoTo();
+                }
+            });
+
+            // 支持回车键输入
+            document.getElementById('type-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    remoteType();
+                }
+            });
+
+            // 页面加载后自动刷新一次
+            window.onload = refreshScreenshot;
+    </script>
+</body>
+
+</html>

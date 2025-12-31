@@ -1,0 +1,26 @@
+node_modules/
+browser-data/
+debug-screenshots/
+dist/
+*.log
+.DS_Store
+.env
+
+# 敏感数据
+*.png
+*.jpg
+*.jpeg
+Cookies
+Cookies-journal
+Login Data
+Login Data-journal
+Login Data For Account
+Login Data For Account-journal
+Local Storage/
+Session Storage/
+IndexedDB/
+data/
+
+# 进程 PID 文件
+.dev-server.pid
+

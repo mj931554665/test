@@ -1,0 +1,16 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "origin"]
+	url = https://github.com/JoeanAmier/XHS-Downloader.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+	vscode-merge-base = origin/master
+	gk-last-accessed = 2025-12-25T05:16:35.128Z
+	gk-last-modified = 2025-12-25T05:16:35.128Z

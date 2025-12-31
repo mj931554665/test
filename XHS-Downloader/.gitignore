@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+/.venv/
+/xhs_env/
+/.ruff_cache/
+/.idea/
+/.run/
+/Volume/
+!/.github/
+*.log
+.DS_Store

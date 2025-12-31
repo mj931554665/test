@@ -1,0 +1,30 @@
+{
+  "name": "douyin-publisher-service",
+  "version": "1.0.0",
+  "description": "抖音创作者中心视频发布服务",
+  "main": "dev/server.js",
+  "scripts": {
+    "dev": "node dev/server.js",
+    "start": "node dev/server.js",
+    "build": "node build.js"
+  },
+  "keywords": [
+    "douyin",
+    "publisher",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "playwright": "1.56.1",
+    "playwright-extra": "4.3.6",
+    "puppeteer-extra-plugin-stealth": "2.11.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.1",
+    "nodemon": "^3.0.1"
+  }
+}
