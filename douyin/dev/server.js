@@ -190,7 +190,14 @@ function mountPlatformRoutes(prefix, apis) {
   app.post(`${base}/remote-click`, async (req, res) => {
     try {
       const { x, y, type = 'click' } = req.body;
-      const page = apis.getPage ? apis.getPage() : null;
+
+      let page;
+      try { page = apis.getPage ? apis.getPage() : null; } catch (e) { page = null; }
+      if (!page && apis.initBrowser) {
+        console.log('[Remote] 浏览器未启动，正在自动初始化(Headless)...');
+        await apis.initBrowser(true);
+        page = apis.getPage();
+      }
       if (!page) throw new Error('当前没有活动的浏览器页面');
 
       if (type === 'click') {
@@ -214,7 +221,14 @@ function mountPlatformRoutes(prefix, apis) {
   // 远程控制接口：强制截图并获取 URL
   app.get(`${base}/remote-screenshot`, async (req, res) => {
     try {
-      const page = apis.getPage ? apis.getPage() : null;
+
+      let page;
+      try { page = apis.getPage ? apis.getPage() : null; } catch (e) { page = null; }
+      if (!page && apis.initBrowser) {
+        console.log('[Remote] 浏览器未启动，正在自动初始化(Headless)...');
+        await apis.initBrowser(true);
+        page = apis.getPage();
+      }
       if (!page) throw new Error('当前没有活动的浏览器页面');
 
       const screenshotName = `remote-refresh-${Date.now()}.png`;
@@ -232,7 +246,14 @@ function mountPlatformRoutes(prefix, apis) {
     try {
       const { url } = req.body;
       if (!url) throw new Error('URL 不能为空');
-      const page = apis.getPage ? apis.getPage() : null;
+
+      let page;
+      try { page = apis.getPage ? apis.getPage() : null; } catch (e) { page = null; }
+      if (!page && apis.initBrowser) {
+        console.log('[Remote] 浏览器未启动，正在自动初始化(Headless)...');
+        await apis.initBrowser(true);
+        page = apis.getPage();
+      }
       if (!page) throw new Error('当前没有活动的浏览器页面');
 
       console.log(`[Remote] 跳转 URL: ${url}`);
@@ -255,7 +276,14 @@ function mountPlatformRoutes(prefix, apis) {
     try {
       const { text, delay = 100 } = req.body;
       if (!text) throw new Error('输入文字不能为空');
-      const page = apis.getPage ? apis.getPage() : null;
+
+      let page;
+      try { page = apis.getPage ? apis.getPage() : null; } catch (e) { page = null; }
+      if (!page && apis.initBrowser) {
+        console.log('[Remote] 浏览器未启动，正在自动初始化(Headless)...');
+        await apis.initBrowser(true);
+        page = apis.getPage();
+      }
       if (!page) throw new Error('当前没有活动的浏览器页面');
 
       console.log(`[Remote] 输入文字: ${text}`);
@@ -312,7 +340,14 @@ function mountPlatformRoutes(prefix, apis) {
   // 远程注销 (清除所有缓存和Cookie)
   app.post(`${base}/remote-logout`, async (req, res) => {
     try {
-      const page = apis.getPage ? apis.getPage() : null;
+
+      let page;
+      try { page = apis.getPage ? apis.getPage() : null; } catch (e) { page = null; }
+      if (!page && apis.initBrowser) {
+        console.log('[Remote] 浏览器未启动，正在自动初始化(Headless)...');
+        await apis.initBrowser(true);
+        page = apis.getPage();
+      }
       if (!page) throw new Error('当前没有活动的浏览器页面');
 
       console.log('[Remote] 执行远程注销...');

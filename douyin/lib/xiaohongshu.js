@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { initBrowser, closeBrowser } = require('./browser');
+const { initBrowser, getPage, closeBrowser } = require('./browser');
 const { createLogger } = require('./logger');
 const { readEnvValue } = require('./config');
 
@@ -397,7 +397,7 @@ async function logout() {
   } catch (e) {
     return { success: false, error: e.message };
   } finally {
-    await closeBrowser().catch(() => {});
+    await closeBrowser().catch(() => { });
   }
 }
 
@@ -416,7 +416,7 @@ async function fetchProfileHtml(userId) {
     } catch (err) {
       if (err?.message && err.message.includes('Page crashed')) {
         logger.warn('检测到页面崩溃，尝试重启浏览器后重试', { url });
-        await closeBrowser().catch(() => {});
+        await closeBrowser().catch(() => { });
         const restarted = await initBrowser(false); // 崩溃后改为有头重试
         page = restarted.page;
         await page.goto(url, gotoOptions);
@@ -472,4 +472,7 @@ module.exports = {
   publishImages,
   logout,
   fetchProfileHtml,
+  initBrowser,
+  getPage,
+  closeBrowser
 };

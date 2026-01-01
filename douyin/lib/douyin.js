@@ -48,7 +48,7 @@ async function gotoWithRecovery(page, url, options, headless = true) {
 async function checkLoginStatus() {
   stepLog('检查登录状态');
   const { page } = await initBrowser(DEFAULT_HEADLESS);
-  
+
   try {
     await page.goto('https://creator.douyin.com/creator-micro/content/upload', {
       waitUntil: 'domcontentloaded',
@@ -59,7 +59,7 @@ async function checkLoginStatus() {
 
     // 检查是否有上传按钮（已登录的明确标志）
     const uploadButton = await page.$('button:has-text("上传视频"), button:has-text("点击上传")');
-    
+
     if (uploadButton) {
       return { loggedIn: true };
     }
@@ -129,7 +129,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
   log('\n🔍 步骤 2: 检查登录状态...');
   // 检查是否有上传按钮（已登录标志）
   const uploadButtonCheck = await page.$('button:has-text("上传视频"), button:has-text("点击上传")');
-  
+
   if (!uploadButtonCheck) {
     if (DEBUG) await debugSnapshot('video-step2-not-logged-in', page);
     throw new Error('未登录，请先调用 douyin_login 进行登录');
@@ -186,7 +186,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
   const maxWaitTime = 600000; // 10 分钟
   const startTime = Date.now();
   let lastStatus = null;
-  
+
   while (!uploadComplete && (Date.now() - startTime) < maxWaitTime) {
     const uploadStatus = await page.evaluate(() => {
       const titleInput = document.querySelector('textbox[placeholder*="标题"], input[placeholder*="标题"]');
@@ -194,7 +194,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
       const uploadProgress = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent || '';
         return (text.includes('%') && (text.includes('上传') || text.includes('解析'))) ||
-               text.includes('上传中') || text.includes('解析中') || text.includes('文件解析中');
+          text.includes('上传中') || text.includes('解析中') || text.includes('文件解析中');
       });
       const completeText = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent || '';
@@ -225,7 +225,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
         currentUrl: window.location.href
       };
     });
-    
+
     const statusStr = JSON.stringify(uploadStatus);
     if (statusStr !== lastStatus) {
       log(`📊 上传状态: ${statusStr}`);
@@ -237,14 +237,14 @@ async function publishVideo({ title, description, tags, videoPath }) {
       log('✅ 视频上传完成（发布按钮已可点击）');
       break;
     }
-    
+
     if (uploadStatus.hasFailText) {
       throw new Error('视频上传失败');
     }
-    
+
     await page.waitForTimeout(2000);
   }
-  
+
   if (!uploadComplete) {
     warn('   ⚠️  上传等待超时，但继续执行...');
   }
@@ -263,7 +263,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
       '[class*="skip"]',
       '[class*="close"]'
     ];
-    
+
     for (const selector of guideButtons) {
       const button = await page.$(selector);
       if (button) {
@@ -273,13 +273,13 @@ async function publishVideo({ title, description, tags, videoPath }) {
         break;
       }
     }
-    
+
     // 如果还有遮罩层，按 ESC 键或直接移除
     const overlay = await page.$('[class*="joyride"]');
     if (overlay) {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(500);
-      
+
       // 如果还在，直接移除 DOM
       await page.evaluate(() => {
         const overlays = document.querySelectorAll('[class*="joyride"]');
@@ -294,7 +294,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
   // 6. 填写标题
   log('\n📝 步骤 6: 填写标题...');
   if (DEBUG) await debugSnapshot('video-step6-before-title', page);
-  
+
   const titleSelectors = [
     'textbox[placeholder*="填写作品标题"]',
     'input[placeholder*="标题"]',
@@ -302,9 +302,9 @@ async function publishVideo({ title, description, tags, videoPath }) {
     'input[type="text"]',
     'textarea'
   ];
-  
+
   const titleInput = await smartFindElement(page, titleSelectors, '标题输入框');
-  
+
   if (titleInput) {
     await titleInput.click();
     await page.waitForTimeout(200);
@@ -322,16 +322,16 @@ async function publishVideo({ title, description, tags, videoPath }) {
   // 7. 填写简介和标签（按照正确流程：先简介，后逐个添加tag）
   log('\n📝 步骤 7: 填写简介和标签...');
   if (DEBUG) await debugSnapshot('video-step7-before-description', page);
-  
+
   let descInput = await smartFindElement(page, DESC_SELECTORS, '简介输入框');
-  
+
   if (descInput) {
     log('✅ 找到简介输入框，开始填写...');
-    
+
     // 步骤1: 清空输入框
     await clearContentEditable(descInput);
     await page.waitForTimeout(300);
-    
+
     // 步骤2: 如果有简介，先输入简介
     if (description) {
       // 确保光标在开头（没有换行）
@@ -345,7 +345,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
         selection.addRange(range);
       });
       await page.waitForTimeout(200);
-      
+
       // 获取元素的 selector，使用 locator 进行输入（ElementHandle 没有 pressSequentially 方法）
       const selector = await descInput.evaluate((el) => {
         // 尝试生成唯一的选择器
@@ -356,7 +356,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
         }
         return null;
       });
-      
+
       // 使用 locator 或直接使用 keyboard.type
       if (selector) {
         try {
@@ -372,14 +372,14 @@ async function publishVideo({ title, description, tags, videoPath }) {
         await page.keyboard.type(description, { delay: 50 });
       }
       await page.waitForTimeout(800);
-      
+
       log(`✅ 简介已输入: ${description.substring(0, 50)}...`);
     }
-    
+
     // 步骤3: 如果有标签，逐个添加（每个tag输入后按空格）
     if (tags && Array.isArray(tags) && tags.length > 0) {
       log(`📝 开始添加 ${tags.length} 个标签...`);
-      
+
       // 获取 selector 用于后续输入
       const selector = await descInput.evaluate((el) => {
         if (el.id) return `#${el.id}`;
@@ -389,15 +389,15 @@ async function publishVideo({ title, description, tags, videoPath }) {
         }
         return null;
       });
-      
+
       for (let i = 0; i < tags.length; i++) {
         try {
           const tag = tags[i].startsWith('#') ? tags[i] : `#${tags[i]}`;
-          
+
           // 确保光标在末尾
           await moveCursorToEnd(descInput);
           await page.waitForTimeout(200);
-          
+
           // 输入 tag（前面加空格）
           if (selector) {
             try {
@@ -411,11 +411,11 @@ async function publishVideo({ title, description, tags, videoPath }) {
             await page.keyboard.type(` ${tag}`, { delay: 50 });
           }
           await page.waitForTimeout(1200);
-          
+
           // 按空格而不是回车，防止页面跳转
           await page.keyboard.press('Space');
           await page.waitForTimeout(800);
-          
+
           log(`   ✅ 标签 ${i + 1}/${tags.length} 已添加: ${tag}`);
         } catch (error) {
           warn(`   ⚠️  标签 ${i + 1}/${tags.length} 添加失败: ${tags[i]}, 错误: ${error.message}`);
@@ -436,24 +436,24 @@ async function publishVideo({ title, description, tags, videoPath }) {
           // 清空
           editor.innerHTML = '';
           editor.textContent = '';
-          
+
           // 设置简介
           if (desc) {
             editor.textContent = desc;
           }
-          
+
           editor.dispatchEvent(new Event('input', { bubbles: true }));
-          
+
           // 返回找到的元素信息，用于后续处理标签
           return { success: true, selector };
         }
       }
       return { success: false };
     }, { desc: description || '', tagList: tags || [], selectors: DESC_SELECTORS });
-    
+
     if (result.success) {
       log('✅ 通过备用方案设置简介成功');
-      
+
       // 备用方案：尝试添加标签（如果可能）
       if (tags && Array.isArray(tags) && tags.length > 0) {
         warn('⚠️  备用方案无法自动添加标签，标签需要手动添加');
@@ -471,7 +471,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
       const checkText = Array.from(document.querySelectorAll('*')).find(el => {
         const text = el.textContent || '';
         return text.includes('作品未见异常') || text.includes('检测完成') ||
-               text.includes('检测中') === false;
+          text.includes('检测中') === false;
       });
       return !!checkText;
     }, { timeout: 30000 });
@@ -492,22 +492,22 @@ async function publishVideo({ title, description, tags, videoPath }) {
       descEditor = document.querySelector(selector);
       if (descEditor) break;
     }
-    
+
     const titleOk = titleInput && titleInput.value && titleInput.value.includes(expectedTitle.substring(0, 5));
     const descOk = !expectedDesc || (descEditor && descEditor.textContent && descEditor.textContent.includes(expectedDesc.substring(0, 10)));
-    
+
     return {
       titleOk: titleOk,
       descOk: descOk,
       titleValue: titleInput ? titleInput.value : null,
       descValue: descEditor ? descEditor.textContent.substring(0, 50) : null
     };
-  }, { 
-    expectedTitle: title, 
-    expectedDesc: description || '', 
-    selectors: DESC_SELECTORS 
+  }, {
+    expectedTitle: title,
+    expectedDesc: description || '',
+    selectors: DESC_SELECTORS
   });
-  
+
   log('   📊 发布前内容验证:', JSON.stringify(beforePublishCheck, null, 2));
 
   if (!beforePublishCheck.titleOk) {
@@ -548,7 +548,7 @@ async function publishVideo({ title, description, tags, videoPath }) {
 
   if (DEBUG) await debugSnapshot('video-step10-before-click', page);
   log('   🖱️  尝试点击发布按钮...');
-  
+
   // 尝试点击发布按钮
   const buttonClicked = await page.evaluate(() => {
     try {
@@ -686,10 +686,10 @@ async function logout() {
   try {
     stepLog('退出登录并清理数据');
     const { context } = await initBrowser(true); // 无头模式
-    
+
     // 清除所有 Cookie
     await context.clearCookies();
-    
+
     // 清除浏览器数据目录中的敏感文件
     const userDataDir = getProfileDir();
     const sensitiveFiles = [
@@ -703,7 +703,7 @@ async function logout() {
       path.join(userDataDir, 'Default', 'Session Storage'),
       path.join(userDataDir, 'Default', 'IndexedDB'),
     ];
-    
+
     for (const file of sensitiveFiles) {
       try {
         if (fs.existsSync(file)) {
@@ -719,10 +719,10 @@ async function logout() {
         // 静默处理，文件可能不存在或正在使用
       }
     }
-    
+
     // 关闭浏览器
     await closeBrowser();
-    
+
     return {
       success: true,
       message: '已退出登录，Cookie 和登录数据已清除'
@@ -771,9 +771,9 @@ async function selectMusicFromList(page, music, DEBUG = false) {
 
     // 第三步：等待音乐列表加载
     // 等待搜索框出现（表示弹窗已完全加载）
-    await page.waitForSelector('input[placeholder*="搜索音乐"]', { timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('input[placeholder*="搜索音乐"]', { timeout: 5000 }).catch(() => { });
     await page.waitForTimeout(1500);
-    
+
     // 验证索引范围（支持 0-19）
     const musicIndex = music.index || 0;
     if (musicIndex < 0 || musicIndex >= 20) {
@@ -814,7 +814,7 @@ async function selectMusicFromList(page, music, DEBUG = false) {
           return true;
         }
       }
-      
+
       return false;
     }, musicIndex);
 
@@ -824,7 +824,7 @@ async function selectMusicFromList(page, music, DEBUG = false) {
 
     await page.waitForTimeout(1000);
     if (DEBUG) await debugSnapshot('music3-selected', page);
-    
+
     // 等待音乐弹窗关闭和音乐信息显示
     await page.waitForTimeout(3000);
     if (DEBUG) await debugSnapshot('music4-used', page);
@@ -852,70 +852,70 @@ async function publishImages({ title, description, tags, imagePaths, music }) {
   const DEBUG = false; // 关闭调试模式（生产环境）
   const cfg = douyinConfig;
 
-    try {
-      // ========== 参数校验 ==========
-      // 1. 标题校验
-      if (!title) {
-        throw new Error('标题不能为空');
+  try {
+    // ========== 参数校验 ==========
+    // 1. 标题校验
+    if (!title) {
+      throw new Error('标题不能为空');
+    }
+    if (title.length > 20) {
+      throw new Error(`标题过长（${title.length}字），最多20字`);
+    }
+
+    // 2. 图片校验
+    if (!imagePaths || !Array.isArray(imagePaths) || imagePaths.length === 0) {
+      throw new Error('至少需要提供一张图片');
+    }
+
+    // 验证所有图片文件是否存在
+    for (const imagePath of imagePaths) {
+      if (!fs.existsSync(imagePath)) {
+        throw new Error(`图片文件不存在: ${imagePath}`);
       }
-      if (title.length > 20) {
-        throw new Error(`标题过长（${title.length}字），最多20字`);
+    }
+
+    // 3. 标签处理和校验
+    let finalTags = tags || [];
+
+    // 如果没有提供标签，自动生成
+    if (!finalTags || finalTags.length === 0) {
+      // 从标题中提取关键词作为标签
+      const titleWords = title.split(/[\s,，、]+/).filter(w => w.length >= 2);
+      finalTags = titleWords.slice(0, 3); // 最多取3个
+      if (finalTags.length === 0) {
+        finalTags = ['生活', '分享']; // 默认标签
       }
+    }
 
-      // 2. 图片校验
-      if (!imagePaths || !Array.isArray(imagePaths) || imagePaths.length === 0) {
-        throw new Error('至少需要提供一张图片');
-      }
+    // 标签数量限制
+    if (finalTags.length > 5) {
+      finalTags = finalTags.slice(0, 5);
+    }
 
-      // 验证所有图片文件是否存在
-      for (const imagePath of imagePaths) {
-        if (!fs.existsSync(imagePath)) {
-          throw new Error(`图片文件不存在: ${imagePath}`);
-        }
-      }
+    // 4. 描述校验
+    let finalDescription = description || '';
+    stepLog('参数校验通过', {
+      titleLength: title.length,
+      images: imagePaths.length,
+      tags: finalTags,
+      hasDescription: !!finalDescription,
+      music: music ? { ...music, name: music.name } : null
+    });
 
-      // 3. 标签处理和校验
-      let finalTags = tags || [];
+    // 计算描述+标签的总长度
+    const tagsText = finalTags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
+    const fullContent = finalDescription ? `${finalDescription} ${tagsText}` : tagsText;
 
-      // 如果没有提供标签，自动生成
-      if (!finalTags || finalTags.length === 0) {
-        // 从标题中提取关键词作为标签
-        const titleWords = title.split(/[\s,，、]+/).filter(w => w.length >= 2);
-        finalTags = titleWords.slice(0, 3); // 最多取3个
-        if (finalTags.length === 0) {
-          finalTags = ['生活', '分享']; // 默认标签
-        }
-      }
+    if (fullContent.length > 1000) {
+      throw new Error(`内容过长（${fullContent.length}字，包含标签），最多1000字`);
+    }
 
-      // 标签数量限制
-      if (finalTags.length > 5) {
-        finalTags = finalTags.slice(0, 5);
-      }
-
-      // 4. 描述校验
-      let finalDescription = description || '';
-      stepLog('参数校验通过', {
-        titleLength: title.length,
-        images: imagePaths.length,
-        tags: finalTags,
-        hasDescription: !!finalDescription,
-        music: music ? { ...music, name: music.name } : null
-      });
-
-      // 计算描述+标签的总长度
-      const tagsText = finalTags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
-      const fullContent = finalDescription ? `${finalDescription} ${tagsText}` : tagsText;
-
-      if (fullContent.length > 1000) {
-        throw new Error(`内容过长（${fullContent.length}字，包含标签），最多1000字`);
-      }
-
-      // 违禁词校验
-      const fullText = [title, finalDescription, ...(finalTags || [])].filter(Boolean).join(' ');
-      const hits = checkForbidden(fullText);
-      if (hits.length > 0) {
-        throw new Error(`内容包含违禁词: ${hits.join(', ')}`);
-      }
+    // 违禁词校验
+    const fullText = [title, finalDescription, ...(finalTags || [])].filter(Boolean).join(' ');
+    const hits = checkForbidden(fullText);
+    if (hits.length > 0) {
+      throw new Error(`内容包含违禁词: ${hits.join(', ')}`);
+    }
 
     // 1. 打开图文发布页面
     page = await gotoWithRecovery(page, cfg.openPage.url, {
@@ -1034,14 +1034,14 @@ async function publishImages({ title, description, tags, imagePaths, music }) {
       let checkComplete = false;
       const checkStartTime = Date.now();
       const urlBeforeCheck = page.url();
-      
+
       stepLog('开始等待内容检测', { timeoutMs: 30000, url: urlBeforeCheck });
       while (!checkComplete && (Date.now() - checkStartTime) < 30000) {
         const currentUrl = page.url();
         if (currentUrl !== urlBeforeCheck) {
           break;
         }
-        
+
         const checkText = await page.evaluate(() => {
           const text = Array.from(document.querySelectorAll('*')).find(el => {
             const t = el.textContent || '';
@@ -1049,7 +1049,7 @@ async function publishImages({ title, description, tags, imagePaths, music }) {
           });
           return !!text;
         });
-        
+
         if (checkText) {
           checkComplete = true;
         } else {
@@ -1098,4 +1098,7 @@ module.exports = {
   publishVideo,
   publishImages,
   logout,
+  initBrowser,
+  getPage,
+  closeBrowser
 };

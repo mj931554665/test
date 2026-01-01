@@ -1,4 +1,6 @@
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-extra');
+const stealth = require('puppeteer-extra-plugin-stealth');
+chromium.use(stealth());
 const path = require('path');
 const fs = require('fs');
 const { resolveProfileDir } = require('./profile');
@@ -13,7 +15,7 @@ function cleanupBrowserLocks(userDataDir) {
   try {
     const singletonLock = path.join(userDataDir, 'SingletonLock');
     const singletonSocket = path.join(userDataDir, 'SingletonSocket');
-    
+
     if (fs.existsSync(singletonLock)) {
       fs.unlinkSync(singletonLock);
     }
@@ -39,7 +41,7 @@ async function initBrowser(headless = true, viewport = null, profileInput = null
     state = null;
   }
   if (state && state.page && state.page.isClosed && state.page.isClosed()) {
-    state.page = null;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+    state.page = null;
   }
 
   if (state && state.context && state.headless === headless) {
@@ -73,7 +75,8 @@ async function initBrowser(headless = true, viewport = null, profileInput = null
     const context = await chromium.launchPersistentContext(userDataDir, {
       headless: headless,
       viewport: defaultViewport,
-        channel: process.env.NODE_ENV === 'production' ? undefined : 'chrome'
+      channel: undefined,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
     });
 
     // launchPersistentContext 会自动创建一个页面，使用现有的而不是新建
@@ -93,7 +96,8 @@ async function initBrowser(headless = true, viewport = null, profileInput = null
       const context = await chromium.launchPersistentContext(userDataDir, {
         headless: headless,
         viewport: defaultViewport,
-          channel: process.env.NODE_ENV === 'production' ? undefined : 'chrome'
+        channel: undefined,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
       });
       // launchPersistentContext 会自动创建一个页面，使用现有的而不是新建
       const page = context.pages()[0] || await context.newPage();

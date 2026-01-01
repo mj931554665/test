@@ -25,17 +25,20 @@
         }
 
         header {
-            padding: 15px 20px;
+            padding: 10px 20px;
             background-color: var(--panel);
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            position: relative;
         }
 
         .controls {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         button {
@@ -47,6 +50,7 @@
             cursor: pointer;
             font-weight: bold;
             transition: opacity 0.2s;
+            white-space: nowrap;
         }
 
         button:hover {
@@ -60,11 +64,11 @@
         main {
             flex: 1;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             padding: 20px;
             overflow: auto;
-            position: relative;
+            background-color: #000;
         }
 
         .canvas-container {
@@ -251,45 +255,47 @@
             } finally {
                 loading.style.display = 'none';
             }
-            async function remoteLogout() {
-                if (!confirm('确定要强制退出当前登录的账号吗？\n这会清除浏览器所有的 Cookie 和缓存。')) return;
+        }
 
-                loading.style.display = 'block';
-                try {
-                    const platform = platformSelect.value;
-                    const res = await fetch(`/${platform}/remote-logout`, {
-                        method: 'POST'
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert(data.message);
-                        setTimeout(refreshScreenshot, 1000);
-                    } else {
-                        alert('注销失败: ' + data.error);
-                    }
-                } catch (e) {
-                    alert('网络错误');
-                } finally {
-                    loading.style.display = 'none';
+        async function remoteLogout() {
+            if (!confirm('确定要强制退出当前登录的账号吗？\n这会清除浏览器所有的 Cookie 和缓存。')) return;
+
+            loading.style.display = 'block';
+            try {
+                const platform = platformSelect.value;
+                const res = await fetch(`/${platform}/remote-logout`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    setTimeout(refreshScreenshot, 1000);
+                } else {
+                    alert('注销失败: ' + data.error);
                 }
+            } catch (e) {
+                alert('网络错误');
+            } finally {
+                loading.style.display = 'none';
             }
+        }
 
-            // 支持回车键跳转
-            document.getElementById('url-input').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    remoteGoTo();
-                }
-            });
+        // 支持回车键跳转
+        document.getElementById('url-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                remoteGoTo();
+            }
+        });
 
-            // 支持回车键输入
-            document.getElementById('type-input').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    remoteType();
-                }
-            });
+        // 支持回车键输入
+        document.getElementById('type-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                remoteType();
+            }
+        });
 
-            // 页面加载后自动刷新一次
-            window.onload = refreshScreenshot;
+        // 页面加载后自动刷新一次
+        window.onload = refreshScreenshot;
     </script>
 </body>
 
