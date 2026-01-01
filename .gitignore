@@ -31,3 +31,5 @@ IndexedDB/
 .dev-server.pid
 
 docs/
+douyin/data/browser-data/
+douyin/data/pid/
